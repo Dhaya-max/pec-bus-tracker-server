@@ -1,24 +1,39 @@
-const { parse } = require('url')
-const authRoutes = require('./auth')
-const busRoutes = require('./bus')
+const http = require('http')
+const { Server } = require('socket.io')
+const { connectDB } = require('./models/db')
+const handleRequest = require('./routes/index')
+require('dotenv').config()
 
-async function handleRequest(req, res) {
-  const { pathname } = parse(req.url)
+const PORT = process.env.PORT || 5000
 
-  let body = ''
-  req.on('data', chunk => body += chunk)
-  await new Promise(resolve => req.on('end', resolve))
-  req.body = body ? JSON.parse(body) : {}
+const server = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://pec-bus-tracker-s8ru.vercel.app')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
-  res.json = (data, status = 200) => {
-    res.writeHead(status, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify(data))
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return
   }
 
-  if (pathname.startsWith('/api/auth')) return authRoutes(req, res)
-  if (pathname.startsWith('/api/bus')) return busRoutes(req, res)
+  handleRequest(req, res)
+})
 
-  res.json({ error: 'Route not found' }, 404)
-}
+const io = new Server(server, {
+  cors: { origin: 'https://pec-bus-tracker-s8ru.vercel.app', methods: ['GET', 'POST'] }
+})
 
-module.exports = handleRequest
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id)
+  socket.on('driver:update', (data) => {
+    io.emit('bus:updated', data)
+  })
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id)
+  })
+})
+
+connectDB().then(() => {
+  server.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+})
