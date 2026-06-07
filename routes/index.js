@@ -1,17 +1,24 @@
-const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+const { parse } = require('url')
+const authRoutes = require('./auth')
+const busRoutes = require('./bus')
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204)
-    res.end()
-    return
+async function handleRequest(req, res) {
+  const { pathname } = parse(req.url)
+
+  let body = ''
+  req.on('data', chunk => body += chunk)
+  await new Promise(resolve => req.on('end', resolve))
+  req.body = body ? JSON.parse(body) : {}
+
+  res.json = (data, status = 200) => {
+    res.writeHead(status, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify(data))
   }
 
-  handleRequest(req, res)
-})
+  if (pathname.startsWith('/api/auth')) return authRoutes(req, res)
+  if (pathname.startsWith('/api/bus')) return busRoutes(req, res)
 
-const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] }
-})
+  res.json({ error: 'Route not found' }, 404)
+}
+
+module.exports = handleRequest
