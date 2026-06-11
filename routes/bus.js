@@ -5,7 +5,6 @@ const { verifyToken } = require('../middleware/auth')
 async function busRoutes(req, res) {
   const { pathname } = parse(req.url)
 
-  // Public route - no auth needed
   if (pathname === '/api/bus/seed' && req.method === 'POST') {
     const db = getDB()
     const buses = [
@@ -21,7 +20,6 @@ async function busRoutes(req, res) {
     return res.json({ message: 'Buses seeded successfully!' })
   }
 
-  // Protected routes
   const user = verifyToken(req)
   if (!user) return res.json({ error: 'Unauthorized' }, 401)
 
@@ -29,6 +27,14 @@ async function busRoutes(req, res) {
     const db = getDB()
     const buses = await db.collection('buses').find({}).toArray()
     return res.json(buses)
+  }
+
+  // Get bus assigned to the logged-in driver by matching name
+  if (pathname === '/api/bus/mybus' && req.method === 'GET') {
+    const db = getDB()
+    const bus = await db.collection('buses').findOne({ driver: user.name })
+    if (!bus) return res.json({ error: 'No bus assigned to you' }, 404)
+    return res.json(bus)
   }
 
   if (pathname === '/api/bus/status' && req.method === 'POST') {
