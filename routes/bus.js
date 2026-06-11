@@ -47,6 +47,29 @@ async function busRoutes(req, res) {
     )
     return res.json({ message: 'Status updated' })
   }
+  // Add bus
+  if (pathname === '/api/bus/add' && req.method === 'POST') {
+    const db = getDB()
+    const bus = req.body
+    await db.collection('buses').insertOne(bus)
+    return res.json({ message: 'Bus added', bus })
+  }
+
+  // Delete bus
+  if (pathname.startsWith('/api/bus/delete/') && req.method === 'DELETE') {
+    const busId = pathname.split('/').pop()
+    const db = getDB()
+    await db.collection('buses').deleteOne({ busId })
+    return res.json({ message: 'Bus deleted' })
+  }
+
+  // Toggle status
+  if (pathname === '/api/bus/toggle' && req.method === 'POST') {
+    const { busId, status } = req.body
+    const db = getDB()
+    await db.collection('buses').updateOne({ busId }, { $set: { status } })
+    return res.json({ message: 'Status toggled' })
+  }
 
   res.json({ error: 'Bus route not found' }, 404)
 }
