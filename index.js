@@ -26,9 +26,15 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id)
+
   socket.on('driver:update', (data) => {
     io.emit('bus:updated', data)
   })
+
+  socket.on('driver:location', (data) => {
+    io.emit('bus:location', data)
+  })
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id)
   })
