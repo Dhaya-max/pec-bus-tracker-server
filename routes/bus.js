@@ -70,6 +70,15 @@ async function busRoutes(req, res) {
     await db.collection('buses').updateOne({ busId }, { $set: { status } })
     return res.json({ message: 'Status toggled' })
   }
+  if (pathname === '/api/bus/update' && req.method === 'POST') {
+  const { busId, driver, route, capacity } = req.body
+  const db = getDB()
+  await db.collection('buses').updateOne(
+    { busId },
+    { $set: { driver, route, capacity } }
+  )
+  return res.json({ message: 'Bus updated' })
+}
 
   res.json({ error: 'Bus route not found' }, 404)
 }
