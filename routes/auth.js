@@ -31,7 +31,19 @@ async function authRoutes(req, res) {
     )
     return res.json({ token, role: user.role, name: user.name })
   }
+  if (pathname === '/api/auth/users' && req.method === 'GET') {
+  const db = getDB()
+  const users = await db.collection('users').find({}, { projection: { password: 0 } }).toArray()
+  return res.json(users)
+}
 
+if (pathname.startsWith('/api/auth/users/delete/') && req.method === 'DELETE') {
+  const id = pathname.split('/').pop()
+  const { ObjectId } = require('mongodb')
+  const db = getDB()
+  await db.collection('users').deleteOne({ _id: new ObjectId(id) })
+  return res.json({ message: 'User deleted' })
+}
   res.json({ error: 'Auth route not found' }, 404)
 }
 
